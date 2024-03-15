@@ -61,4 +61,48 @@ class MainTest {
   }
 
   // TODO: Create your test(s) below. /////////////////////////////////////////
+  @Test
+  void testGetId() {
+      // Arrange
+      String testWord = "testword";
+      Connection db = Main.createConnection();
+
+      // Act
+      int wordId = -1;
+      try {
+          wordId = Main.getId(db, testWord);
+      } catch (SQLException e) {
+          fail("SQLException occurred during test: " + e.getMessage());
+      }
+
+      // Assert
+      assertNotEquals(-1, wordId, "Word ID should not be -1");
+
+      // Verify that the inserted word is without additional single quotes
+      verifyInsertedWord(db, testWord, wordId);
+
+      // Clean up
+      closeDatabaseConnection(db);
+  }
+
+    private void verifyInsertedWord(Connection db, String word, int wordId) {
+        try (Statement statement = db.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("SELECT string FROM words WHERE id = " + wordId);
+            assertTrue(resultSet.next(), "Word should be present in the database");
+            String retrievedWord = resultSet.getString("string");
+            assertEquals(word, retrievedWord, "Retrieved word should match the test word");
+            assertFalse(retrievedWord.startsWith("'") || retrievedWord.endsWith("'"),
+                    "Retrieved word should not start or end with a single quote");
+        } catch (SQLException e) {
+            fail("SQLException occurred during verification: " + e.getMessage());
+        }
+    }
+
+    private void closeDatabaseConnection(Connection db) {
+        try {
+            db.close();
+        } catch (SQLException e) {
+            fail("Failed to close database connection: " + e.getMessage());
+        }
+    }
 }
